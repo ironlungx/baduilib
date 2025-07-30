@@ -1,13 +1,11 @@
-#include "settings.h"
 #include <baduilib.h>
-#include <climits>
-#include <cstdint>
+#include <settings.h>
 #include <stack_viewer.h>
 #include <u8g2.h>
 
 #define LEN(x) (sizeof(x) / sizeof((x)[0]))
 
-u8g2_t u8g2;
+u8g2_t       u8g2;
 SceneManager manager(&u8g2);
 
 bool quit = false;
@@ -15,11 +13,11 @@ bool quit = false;
 struct {
   char ssid[128];
   bool ble;
-  int port;
+  int  port;
   bool webserver;
   bool darkMode;
 
-  uint8_t wifi_mode = 0;
+  uint8_t wifi_mode   = 0;
   uint8_t debug_level = 0;
 } config;
 
@@ -30,7 +28,9 @@ Setting wifiMenu[] = {
     Setting::Info("WiFi3"),
 };
 
-Menu wifi("WiFi Config", wifiMenu, LEN(wifiMenu));
+MenuConfig c;
+
+Menu wifi("WiFi Config", wifiMenu, LEN(wifiMenu), &c);
 
 Setting set[] = {
     Setting::String("SSID", config.ssid, LEN(config.ssid)),
@@ -46,7 +46,7 @@ Setting set[] = {
         "Quit", [](void *p) { quit = true; }, nullptr),
 };
 
-Menu mainMenu("Main Menu", set, LEN(set));
+Menu mainMenu("Main Menu", set, LEN(set), &c);
 
 int main(void) {
   u8g2_SetupBuffer_SDL_256x128(&u8g2, &u8g2_cb_r0);
