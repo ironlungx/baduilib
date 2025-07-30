@@ -146,14 +146,17 @@ struct MenuConfig {
     uint16_t top    = 2;
   } margin;
 
+  uint16_t item_padding = 2;
+
   struct {
     uint16_t width  = 3;    // Width of the slider
     bool     round  = true; // Makes the slider round yaaya
     bool     dotted = true; // Have a dotted line instead of a solid line in the bg.
-  } scrollbar_config;
+  } scrollbar;
 
-  const uint8_t *header_font;
-  const uint8_t *item_font;
+  const uint8_t *title_font = u8g2_font_helvB08_tr;
+  const uint8_t *item_font  = u8g2_font_haxrcorp4089_tr;
+  const uint8_t *value_font = u8g2_font_4x6_tr;
 };
 
 class Menu : public Scene {
@@ -163,16 +166,16 @@ class Menu : public Scene {
   size_t viewport_start; // index to begin rendering the viewport
   size_t viewport_size;  // size of the viewport
 
+  const char *title;
   Setting    *root;
   size_t      n_root;
-  const char *header;
 
   MenuConfig *config;
 
   size_t getViewportEnd() const { return std::min(viewport_start + viewport_size, n_root); }
 
 public:
-  Menu(const char *root_header, Setting *root, size_t n_root);
+  Menu(const char *root_header, Setting *root, size_t n_root, MenuConfig *config);
 
   void setDisplay(u8g2_t *u8g2);
 

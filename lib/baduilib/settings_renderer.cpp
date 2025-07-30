@@ -14,22 +14,23 @@ void Menu::render() {
   }
 
   const uint16_t height = u8g2->height;
-  const uint16_t width = u8g2->width;
+  const uint16_t width  = u8g2->width;
 
-  const uint8_t padding_x = 5;
-  const uint8_t padding_y = 2;
+  // Use config values instead of hardcoded ones
+  const uint8_t &padding_x = config->margin.left;
+  // const uint8_t padding_y = config->margin.top;
 
-  u8g2_SetFont(u8g2, u8g2_font_helvB08_tr);
+  u8g2_SetFont(u8g2, config->title_font);
 
   const uint16_t title_height = u8g2_GetMaxCharHeight(u8g2);
-  const uint16_t header_width = u8g2_GetUTF8Width(u8g2, header);
+  const uint16_t title_width  = u8g2_GetUTF8Width(u8g2, title);
 
-  // Scrollbar configuration
-  const uint8_t scrollbar_width = 3;
-  const uint16_t scrollbar_x = width - scrollbar_width;
-  const uint16_t scrollbar_top = padding_y;
+  // Scrollbar configuration using config
+  const uint8_t  scrollbar_width  = config->scrollbar.width;
+  const uint16_t scrollbar_x      = width - scrollbar_width;
+  const uint16_t scrollbar_top    = config->margin.top;
   const uint16_t scrollbar_bottom = height - title_height - 5;
-  const uint8_t scrollbar_height = scrollbar_bottom - scrollbar_top;
+  const uint8_t  scrollbar_height = scrollbar_bottom - scrollbar_top;
 
   // Calculate visible items in viewport
   size_t visible_items = getViewportEnd() - viewport_start;
@@ -38,28 +39,31 @@ void Menu::render() {
   bool show_scrollbar = n_root > visible_items;
 
   for (size_t i = viewport_start; i < getViewportEnd(); i++) {
-    u8g2_SetFont(u8g2, u8g2_font_haxrcorp4089_tr);
+    u8g2_SetFont(u8g2, config->item_font);
 
     const uint16_t item_font_height = u8g2_GetMaxCharHeight(u8g2);
-    uint16_t item_right_edge = show_scrollbar ? scrollbar_x - 2 : width - padding_x;
-    size_t display_index = i - viewport_start;
-    uint16_t title_y = (padding_y * (display_index + 1)) + (item_font_height * display_index);
+    uint16_t item_right_edge = show_scrollbar ? scrollbar_x - 2 : width - config->margin.right;
+    size_t   display_index   = i - viewport_start;
+    uint16_t title_y =
+        (config->item_padding * (display_index + 1)) + (item_font_height * display_index);
 
     const uint16_t item_center_y = title_y + (item_font_height / 2); // center point of the line
 
     switch (root[i].getType()) {
       case SettingType::SEPARATOR: {
         u8g2_DrawLine(u8g2, padding_x, title_y + item_font_height / 2, item_right_edge,
-                       title_y + item_font_height / 2);
+                      title_y + item_font_height / 2);
         continue;
       } break;
       case SettingType::INFO: {
         // We have to center the text and/or render it in a bigger font
         const InfoSetting s = root[i].getInfo();
         if (s.center) {
-          const char *title = root[i].getTitle();
-          uint16_t x = ((width - padding_x - scrollbar_width) - u8g2_GetUTF8Width(u8g2, title)) / 2;
-          u8g2_DrawStr(u8g2, x, title_y, title);
+          const char *item_text = root[i].getTitle();
+          uint16_t    x         = ((width - config->margin.right - scrollbar_width) -
+                        u8g2_GetUTF8Width(u8g2, item_text)) /
+                       2;
+          u8g2_DrawStr(u8g2, x, title_y, item_text);
           continue;
         }
       } break;
@@ -72,7 +76,7 @@ void Menu::render() {
       case SettingType::BACK:
       case SettingType::EMPTY:
         break;
-      }
+    }
 
     if (highlight_idx == i) {
       // Adjust width to avoid scrollbar if present
@@ -81,7 +85,11 @@ void Menu::render() {
         box_width = width - padding_x - scrollbar_width - 4;
       }
 
-      u8g2_DrawRBox(u8g2, padding_x - 1, title_y - 1, box_width, item_font_height + 2, 1);
+      if (config->scrollbar.round) {
+        u8g2_DrawRBox(u8g2, padding_x - 1, title_y - 1, box_width, item_font_height + 2, 1);
+      } else {
+        u8g2_DrawBox(u8g2, padding_x - 1, title_y - 1, box_width, item_font_height + 2);
+      }
 
       u8g2_SetDrawColor(u8g2, 0); // black
     }
@@ -96,8 +104,8 @@ void Menu::render() {
 
     switch (root[i].getType()) {
       case SettingType::BOOL: {
-        constexpr size_t frame_len = 8; // 8x8 outer frame
-        const BoolSetting &b = root[i].getBool();
+        constexpr size_t   frame_len = 8; // 8x8 outer frame
+        const BoolSetting &b         = root[i].getBool();
 
         const uint16_t frame_x = item_right_edge - frame_len;
         const uint16_t frame_y = item_center_y - (frame_len / 2);
@@ -116,9 +124,9 @@ void Menu::render() {
 
       case SettingType::SUBMENU: {
         constexpr size_t len = 5;
-        uint16_t x0, y0;
-        uint16_t x1, y1;
-        uint16_t x2, y2;
+        uint16_t         x0, y0;
+        uint16_t         x1, y1;
+        uint16_t         x2, y2;
 
         x0 = item_right_edge - len;
         y0 = title_y;
@@ -134,17 +142,17 @@ void Menu::render() {
 
       case SettingType::INT: {
         const IntSetting &val = root[i].getInt();
-        u8g2_SetFont(u8g2, u8g2_font_4x6_tn);
+        u8g2_SetFont(u8g2, config->value_font);
 
         char buf[16];
         snprintf(buf, 16, "%d", *val.value);
 
         constexpr size_t border_padding = 2;
 
-        const uint16_t buf_width = u8g2_GetUTF8Width(u8g2, buf);
+        const uint16_t buf_width         = u8g2_GetUTF8Width(u8g2, buf);
         const uint16_t value_font_height = u8g2_GetMaxCharHeight(u8g2);
 
-        const uint16_t frame_width = buf_width + (2 * border_padding);
+        const uint16_t frame_width  = buf_width + (2 * border_padding);
         const uint16_t frame_height = value_font_height + (2 * border_padding);
 
         const uint16_t frame_x = item_right_edge - frame_width;
@@ -160,25 +168,25 @@ void Menu::render() {
 
       case SettingType::STRING: {
         const StringSetting &val = root[i].getString();
-        const char *buf = val.str;
+        const char          *buf = val.str;
 
-        u8g2_SetFont(u8g2, u8g2_font_4x6_tr);
+        u8g2_SetFont(u8g2, config->value_font);
 
         if (buf[0] == '\0') { // empty string
           if (val.placeholder != nullptr) {
             buf = val.placeholder;
           } else {
             static char empty_placeholder[] = "--";
-            buf = empty_placeholder;
+            buf                             = empty_placeholder;
           }
         }
 
         constexpr size_t border_padding = 2;
 
-        const uint8_t buf_width = u8g2_GetUTF8Width(u8g2, buf);
+        const uint8_t buf_width         = u8g2_GetUTF8Width(u8g2, buf);
         const uint8_t value_font_height = u8g2_GetMaxCharHeight(u8g2);
 
-        const uint16_t frame_width = buf_width + (2 * border_padding);
+        const uint16_t frame_width  = buf_width + (2 * border_padding);
         const uint16_t frame_height = value_font_height + (2 * border_padding);
 
         const uint16_t frame_x = item_right_edge - frame_width;
@@ -192,7 +200,7 @@ void Menu::render() {
       } break;
 
       case SettingType::ENUM: {
-        char buf[64];
+        char               buf[64];
         const EnumSetting &val = root[i].getEnum();
 
         if (*(val.selected) >= val.n_items) {
@@ -202,12 +210,12 @@ void Menu::render() {
         snprintf(buf, sizeof(buf), "%c %s %c", *(val.selected) == 0 ? ' ' : '<',
                  val.items[*(val.selected)], *(val.selected) == val.n_items - 1 ? ' ' : '>');
 
-        u8g2_SetFont(u8g2, u8g2_font_4x6_tr);
+        u8g2_SetFont(u8g2, config->value_font);
         const uint16_t buf_width = u8g2_GetUTF8Width(u8g2, buf);
-        const uint16_t text_x = item_right_edge - buf_width;
+        const uint16_t text_x    = item_right_edge - buf_width;
 
-        const uint8_t font_height = u8g2_GetMaxCharHeight(u8g2);
-        const uint16_t text_y = item_center_y - (font_height / 2);
+        const uint8_t  font_height = u8g2_GetMaxCharHeight(u8g2);
+        const uint16_t text_y      = item_center_y - (font_height / 2);
 
         u8g2_DrawStr(u8g2, text_x, text_y, buf);
       } break;
@@ -219,16 +227,21 @@ void Menu::render() {
 
   // Draw scrollbar if needed
   if (show_scrollbar) {
-    // Draw dotted line track down the center of the scrollbar area
     uint16_t center_x = scrollbar_x + (scrollbar_width / 2);
 
-    // Draw dotted line - alternate pixels every 2 pixels
-    for (uint16_t y = scrollbar_top; y < scrollbar_bottom; y += 3) {
-      u8g2_DrawPixel(u8g2, center_x, y);
+    // Draw background track based on config
+    if (config->scrollbar.dotted) {
+      // Draw dotted line - alternate pixels every 2 pixels
+      for (uint16_t y = scrollbar_top; y < scrollbar_bottom; y += 3) {
+        u8g2_DrawPixel(u8g2, center_x, y);
+      }
+    } else {
+      // Draw solid line track
+      u8g2_DrawVLine(u8g2, center_x, scrollbar_top, scrollbar_height);
     }
 
     // Calculate scrollbar thumb position and size
-    float scroll_ratio = (float)viewport_start / (float)(n_root - visible_items);
+    float scroll_ratio     = (float)viewport_start / (float)(n_root - visible_items);
     float thumb_size_ratio = (float)visible_items / (float)n_root;
 
     uint16_t thumb_height = (uint8_t)(scrollbar_height * thumb_size_ratio);
@@ -237,13 +250,17 @@ void Menu::render() {
 
     uint16_t thumb_y = scrollbar_top + (uint8_t)((scrollbar_height - thumb_height) * scroll_ratio);
 
-    // Draw scrollbar thumb as a rounded rectangle
-    u8g2_DrawRBox(u8g2, scrollbar_x, thumb_y, scrollbar_width, thumb_height, 1);
+    // Draw scrollbar thumb based on config
+    if (config->scrollbar.round) {
+      u8g2_DrawRBox(u8g2, scrollbar_x, thumb_y, scrollbar_width, thumb_height, 1);
+    } else {
+      u8g2_DrawBox(u8g2, scrollbar_x, thumb_y, scrollbar_width, thumb_height);
+    }
   }
 
   clearRect(0, height - title_height - 3, width, height - title_height - 3);
 
-  u8g2_SetFont(u8g2, u8g2_font_helvB08_tr);
+  u8g2_SetFont(u8g2, config->title_font);
   u8g2_DrawLine(u8g2, 0, height - title_height - 2, width, height - title_height - 2);
-  u8g2_DrawStr(u8g2, (width - header_width) / 2, height - title_height, header);
+  u8g2_DrawStr(u8g2, (width - title_width) / 2, height - title_height, title);
 }

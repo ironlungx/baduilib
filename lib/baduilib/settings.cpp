@@ -1,11 +1,12 @@
 #include "settings.h"
 #include <cmath>
 
-Menu::Menu(const char *root_header, Setting *root, size_t n_root) :
+Menu::Menu(const char *root_header, Setting *root, size_t n_root, MenuConfig *config) :
     Scene(),
+    title(root_header),
     root(root),
     n_root(n_root),
-    header(root_header) {
+    config(config) {
   setID(root_header);
 }
 
