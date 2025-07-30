@@ -1,0 +1,10 @@
+IndentWidth: 2
+IndentCaseLabels: true
+NamespaceIndentation: All
+ColumnLimit: 100
+
+BreakConstructorInitializers: AfterColon
+PackConstructorInitializers: Never
+
+AlignConsecutiveDeclarations: Consecutive
+AlignConsecutiveAssignments: Consecutive

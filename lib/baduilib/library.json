@@ -1,0 +1,8 @@
+{
+  "name": "BadUILib",
+  "dependencies": [
+    {
+      "name": "U8G2"
+    }
+  ]
+}
