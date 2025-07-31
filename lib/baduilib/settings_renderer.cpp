@@ -2,6 +2,7 @@
 #include <cstdio>
 
 void Menu::render() {
+  // FIXME: Actually use the margin properly
   if (n_root == 0) {
     return;
   }
@@ -13,23 +14,29 @@ void Menu::render() {
     }
   }
 
-  const uint16_t height = u8g2->height;
-  const uint16_t width  = u8g2->width;
+  if (render_region == Rect::full()) {
+    setRenderRegion({.x = 0, .y = 0, .w = u8g2->width, .h = u8g2->height});
+  }
 
-  // Use config values instead of hardcoded ones
-  const uint8_t &padding_x = config->margin.left;
-  // const uint8_t padding_y = config->margin.top;
+  const uint16_t &height   = render_region.h;
+  const uint16_t &width    = render_region.w;
+  const uint16_t &region_x = render_region.x;
+  const uint16_t &region_y = render_region.y;
+
+  // Use config values and apply render region offset
+  const uint8_t padding_x = config->margin.left + region_x;
+  const uint8_t padding_y = config->margin.top + region_y;
 
   u8g2_SetFont(u8g2, config->title_font);
 
   const uint16_t title_height = u8g2_GetMaxCharHeight(u8g2);
   const uint16_t title_width  = u8g2_GetUTF8Width(u8g2, title);
 
-  // Scrollbar configuration using config
+  // Scrollbar configuration using config with render region offset
   const uint8_t  scrollbar_width  = config->scrollbar.width;
-  const uint16_t scrollbar_x      = width - scrollbar_width;
-  const uint16_t scrollbar_top    = config->margin.top;
-  const uint16_t scrollbar_bottom = height - title_height - 5;
+  const uint16_t scrollbar_x      = region_x + width - scrollbar_width;
+  const uint16_t scrollbar_top    = padding_y;
+  const uint16_t scrollbar_bottom = region_y + height - title_height - 5;
   const uint8_t  scrollbar_height = scrollbar_bottom - scrollbar_top;
 
   // Calculate visible items in viewport
@@ -42,10 +49,11 @@ void Menu::render() {
     u8g2_SetFont(u8g2, config->item_font);
 
     const uint16_t item_font_height = u8g2_GetMaxCharHeight(u8g2);
-    uint16_t item_right_edge = show_scrollbar ? scrollbar_x - 2 : width - config->margin.right;
-    size_t   display_index   = i - viewport_start;
-    uint16_t title_y =
-        (config->item_padding * (display_index + 1)) + (item_font_height * display_index);
+    uint16_t       item_right_edge =
+        show_scrollbar ? scrollbar_x - 2 : region_x + width - config->margin.right;
+    size_t   display_index = i - viewport_start;
+    uint16_t title_y       = padding_y + (config->item_padding * (display_index + 1)) +
+                       (item_font_height * display_index);
 
     const uint16_t item_center_y = title_y + (item_font_height / 2); // center point of the line
 
@@ -60,9 +68,11 @@ void Menu::render() {
         const InfoSetting s = root[i].getInfo();
         if (s.center) {
           const char *item_text = root[i].getTitle();
-          uint16_t    x         = ((width - config->margin.right - scrollbar_width) -
-                        u8g2_GetUTF8Width(u8g2, item_text)) /
-                       2;
+          uint16_t    available_width =
+              show_scrollbar ? (scrollbar_x - region_x - config->margin.left - config->margin.right)
+                                : (width - config->margin.left - config->margin.right);
+          uint16_t text_width = u8g2_GetUTF8Width(u8g2, item_text);
+          uint16_t x          = region_x + config->margin.left + (available_width - text_width) / 2;
           u8g2_DrawStr(u8g2, x, title_y, item_text);
           continue;
         }
@@ -81,8 +91,8 @@ void Menu::render() {
     if (highlight_idx == i) {
       // Adjust width to avoid scrollbar if present
       uint16_t box_width = u8g2_GetUTF8Width(u8g2, root[i].getTitle()) + 2;
-      if (show_scrollbar && (padding_x + box_width + scrollbar_width + 2) > width) {
-        box_width = width - padding_x - scrollbar_width - 4;
+      if (show_scrollbar && (padding_x + box_width + scrollbar_width + 2) > (region_x + width)) {
+        box_width = (region_x + width) - padding_x - scrollbar_width - 4;
       }
 
       if (config->scrollbar.round) {
@@ -258,9 +268,10 @@ void Menu::render() {
     }
   }
 
-  clearRect(0, height - title_height - 3, width, height - title_height - 3);
+  clearRect(region_x, region_y + height - title_height - 3, width, title_height + 3);
 
   u8g2_SetFont(u8g2, config->title_font);
-  u8g2_DrawLine(u8g2, 0, height - title_height - 2, width, height - title_height - 2);
-  u8g2_DrawStr(u8g2, (width - title_width) / 2, height - title_height, title);
+  u8g2_DrawLine(u8g2, region_x, region_y + height - title_height - 2, region_x + width,
+                region_y + height - title_height - 2);
+  u8g2_DrawStr(u8g2, region_x + (width - title_width) / 2, region_y + height - title_height, title);
 }

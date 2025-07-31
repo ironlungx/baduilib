@@ -9,7 +9,7 @@ void Scene::clearRect(uint16_t x, uint16_t y, uint16_t w, uint16_t h) {
 
 // display a string on multiple text lines, keeping words intact where possible,
 // and accepting \n to force a new line
-void Scene::wordWrap(int x, int y, const char *text, bool maintain_x) {
+void Scene::wordWrap(int x, int y, const char *text, bool maintain_x) const {
   unsigned int dspwidth = u8g2_GetDisplayWidth(u8g2); // display width in pixels
   unsigned int strwidth = 0;                          // string width in pixels
   unsigned int orignal_x = x;
@@ -51,7 +51,7 @@ void Scene::wordWrap(int x, int y, const char *text, bool maintain_x) {
     x += u8g2_DrawStr(u8g2, x, y, glyph);
   }
 }
-void Scene::centeredText(uint16_t y, const char *str) {
+void Scene::centeredText(uint16_t y, const char *str) const {
   // x => (width - str_width) / 2
   uint16_t width = u8g2_GetUTF8Width(u8g2, str);
   u8g2_DrawStr(u8g2, (u8g2->width - width) / 2, y, str);

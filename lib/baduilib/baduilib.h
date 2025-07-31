@@ -10,6 +10,18 @@ struct Rect {
   int x, y, w, h;
 
   static Rect full() { return {-1, -1, -1, -1}; };
+  static constexpr int FULL_SIZE = -1;
+
+  bool operator==(const Rect rhs) {
+    if (rhs.x == x && rhs.y == y && rhs.w == w && rhs.h == h) {
+      return true;
+    }
+    return false;
+  }
+
+  bool operator!=(Rect rhs) {
+    return !(*this == rhs);
+  }
 };
 
 class SceneManager; // Forward decl.
@@ -21,8 +33,8 @@ protected:
   Rect render_region = Rect::full();
 
   void clearRect(uint16_t x, uint16_t y, uint16_t w, uint16_t h);
-  void centeredText(uint16_t y, const char *str);
-  void wordWrap(int x, int y, const char *text, bool maintain_x);
+  void centeredText(uint16_t y, const char *str) const;
+  void wordWrap(int x, int y, const char *text, bool maintain_x) const;
 
 public:
   char ID[64];

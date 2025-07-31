@@ -28,7 +28,7 @@ Setting wifiMenu[] = {
     Setting::Info("WiFi3"),
 };
 
-MenuConfig c;
+MenuConfig c{.margin = {.right = 55}};
 
 Menu wifi("WiFi Config", wifiMenu, LEN(wifiMenu), &c);
 
@@ -55,6 +55,12 @@ int main(void) {
   u8g2_SetFontPosTop(&u8g2);
   u8g2_SetFontDirection(&u8g2, 0);
 
+  mainMenu.setRenderRegion({
+      .x = u8g2.width / 2, // Right half of screen
+      .y = 0,              // Start at TOP of screen
+      .w = u8g2.width / 2, // Half width
+      .h = u8g2.height     // Full height
+  });
   manager.push(&mainMenu);
 
   while (!quit) {
