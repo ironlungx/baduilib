@@ -55,11 +55,17 @@ int main(void) {
   u8g2_SetFontPosTop(&u8g2);
   u8g2_SetFontDirection(&u8g2, 0);
 
+  /* mainMenu.setRenderRegion({
+      .x = 0,               // Right half of screen
+      .y = u8g2.height / 2, // Start at TOP of screen
+      .w = u8g2.width,      // Half width
+      .h = u8g2.height / 2  // Full height
+  }); */
   mainMenu.setRenderRegion({
-      .x = u8g2.width / 2, // Right half of screen
-      .y = 0,              // Start at TOP of screen
-      .w = u8g2.width / 2, // Half width
-      .h = u8g2.height     // Full height
+      .x = 0,
+      .y = 0,
+      .w = u8g2.width,
+      .h = u8g2.height,
   });
   manager.push(&mainMenu);
 
@@ -87,6 +93,10 @@ int main(void) {
 
       case 's': {
         manager.handleInput(ActionType::SEL);
+      } break;
+
+      case 'u': {
+        mainMenu.updateViewportSize();
       } break;
 
       case 'v': {

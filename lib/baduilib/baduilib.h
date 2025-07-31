@@ -40,7 +40,7 @@ public:
   char ID[64];
   Scene() {}
 
-  void setRenderRegion(Rect r) { render_region = r; };
+  virtual void setRenderRegion(Rect r) { render_region = r; };
 
   void setID(const char *i) { strcpy(ID, i); }
   void setDisplay(u8g2_t *u8g2) { this->u8g2 = u8g2; }

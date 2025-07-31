@@ -160,8 +160,6 @@ struct MenuConfig {
 };
 
 class Menu : public Scene {
-  void updateViewportSize();
-
   size_t highlight_idx;  // highlighted item
   size_t viewport_start; // index to begin rendering the viewport
   size_t viewport_size;  // size of the viewport
@@ -178,10 +176,12 @@ public:
   Menu(const char *root_header, Setting *root, size_t n_root, MenuConfig *config);
 
   void setDisplay(u8g2_t *u8g2);
+  void updateViewportSize();
 
   void reset();
-  void render();
-  void handleInput(ActionType t);
+  void render() override;
+  void handleInput(ActionType t) override;
 
-  void setConfig(MenuConfig c) {}
+  void         setConfig(MenuConfig c) {}
+  void setRenderRegion(Rect r) override;
 };

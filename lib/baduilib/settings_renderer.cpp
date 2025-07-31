@@ -2,7 +2,7 @@
 #include <cstdio>
 
 void Menu::render() {
-  // FIXME: Actually use the margin properly
+  // Implement render_region support for proper positioning
   if (n_root == 0) {
     return;
   }
@@ -12,10 +12,6 @@ void Menu::render() {
     if (viewport_size == 0) {
       return;
     }
-  }
-
-  if (render_region == Rect::full()) {
-    setRenderRegion({.x = 0, .y = 0, .w = u8g2->width, .h = u8g2->height});
   }
 
   const uint16_t &height   = render_region.h;
@@ -39,13 +35,18 @@ void Menu::render() {
   const uint16_t scrollbar_bottom = region_y + height - title_height - 5;
   const uint8_t  scrollbar_height = scrollbar_bottom - scrollbar_top;
 
+  // Calculate the content area boundaries for clipping
+  const uint16_t content_top    = padding_y;
+  const uint16_t content_bottom = region_y + height - title_height - 5;
+
   // Calculate visible items in viewport
   size_t visible_items = getViewportEnd() - viewport_start;
 
   // Only show scrollbar if there are more items than can fit in viewport
   bool show_scrollbar = n_root > visible_items;
 
-  for (size_t i = viewport_start; i < getViewportEnd(); i++) {
+  // Render items until we hit the display bottom
+  for (size_t i = viewport_start; i < n_root; i++) {
     u8g2_SetFont(u8g2, config->item_font);
 
     const uint16_t item_font_height = u8g2_GetMaxCharHeight(u8g2);
@@ -55,6 +56,11 @@ void Menu::render() {
     uint16_t title_y       = padding_y + (config->item_padding * (display_index + 1)) +
                        (item_font_height * display_index);
 
+    // Stop rendering if item would be completely below display
+    if (title_y > u8g2->height) {
+      break;
+    }
+
     const uint16_t item_center_y = title_y + (item_font_height / 2); // center point of the line
 
     switch (root[i].getType()) {
@@ -63,20 +69,30 @@ void Menu::render() {
                       title_y + item_font_height / 2);
         continue;
       } break;
+
       case SettingType::INFO: {
         // We have to center the text and/or render it in a bigger font
         const InfoSetting s = root[i].getInfo();
         if (s.center) {
           const char *item_text = root[i].getTitle();
-          uint16_t    available_width =
-              show_scrollbar ? (scrollbar_x - region_x - config->margin.left - config->margin.right)
-                                : (width - config->margin.left - config->margin.right);
-          uint16_t text_width = u8g2_GetUTF8Width(u8g2, item_text);
-          uint16_t x          = region_x + config->margin.left + (available_width - text_width) / 2;
+
+          // Calculate the left and right boundaries for centering
+          uint16_t left_boundary  = region_x + config->margin.left;
+          uint16_t right_boundary = show_scrollbar
+                                        ? (scrollbar_x - 2)
+                                        : // scrollbar_x is already absolute, just leave gap
+                                        (region_x + width - config->margin.right);
+
+          uint16_t available_width = right_boundary - left_boundary;
+          uint16_t text_width      = u8g2_GetUTF8Width(u8g2, item_text);
+
+          // Center the text within the available space
+          uint16_t x = left_boundary + (available_width - text_width) / 2;
           u8g2_DrawStr(u8g2, x, title_y, item_text);
           continue;
         }
       } break;
+
       case SettingType::STRING:
       case SettingType::INT:
       case SettingType::BOOL:
@@ -111,7 +127,6 @@ void Menu::render() {
     }
 
     // Adjust item rendering positions to account for scrollbar
-
     switch (root[i].getType()) {
       case SettingType::BOOL: {
         constexpr size_t   frame_len = 8; // 8x8 outer frame
@@ -233,6 +248,18 @@ void Menu::render() {
       default:
         break;
     }
+  }
+
+  // Clear/clip areas where content extends beyond viewport bounds
+  // Clear above content area
+  if (content_top > region_y) {
+    clearRect(region_x, region_y, width, content_top - region_y);
+  }
+
+  // Clear below content area (above title section)
+  if (content_bottom < (region_y + height - title_height - 3)) {
+    clearRect(region_x, content_bottom, width,
+              (region_y + height - title_height - 3) - content_bottom);
   }
 
   // Draw scrollbar if needed
